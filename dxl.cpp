@@ -262,14 +262,13 @@ dxl_error_t dxlRxPacket(dxl_t *p_packet)
   }
   else
   {
+    uint8_t buf[128];
+    int len = 0;
     while(dxlRxAvailable(p_packet))
     {
       data = dxlRxRead(p_packet);
       ret  = dxlRxPacketVer2_0(p_packet, data);
-
-      Serial2.print("rx : ");
-      Serial2.println(data);
-      
+      buf[len++] = data;
       //================== Forward to dxlport
 //      dxl_hw_tx_enable();
 //      Serial3.write(data);
@@ -282,13 +281,19 @@ dxl_error_t dxlRxPacket(dxl_t *p_packet)
         break;
       }
     }
+    for(int i = 0; i < len; i++){
+      dxl_hw_tx_enable();
+      Serial3.write(buf[i]);
+      Serial3.flush();
+      dxl_hw_tx_disable();
+    }
   }
 
   return ret;
 }
 
 
-dxl_error_t dxlRxPacket3(dxl_t *p_packet, uint8_t data3[], int data3len)
+dxl_error_t dxlRxPacket3(dxl_t *p_packet, uint8_t data3[], int data3len, int &datacheck)
 {
   uint8_t data;
   dxl_error_t ret = DXL_RET_EMPTY;
@@ -301,12 +306,9 @@ dxl_error_t dxlRxPacket3(dxl_t *p_packet, uint8_t data3[], int data3len)
   }
   else
   {
-    int i = 0;
-    while(i < data3len)
+    while(datacheck < data3len)
     {
-      data = data3[i++];
-      Serial2.print("b3:");
-      Serial2.println(data);
+      data = data3[datacheck++];
       ret  = dxlRxPacketVer2_0(p_packet, data);
       
       //================== Forward to dxlport
@@ -318,7 +320,7 @@ dxl_error_t dxlRxPacket3(dxl_t *p_packet, uint8_t data3[], int data3len)
       
       if (ret != DXL_RET_EMPTY)
       {
-        Serial2.print("DXL_RET_EMPTY 3");
+        
         break;
       }
     }
