@@ -43,7 +43,7 @@ uint32_t dxl_hw_begin(uint8_t baud)
   pinMode( DXL_LED_TX, OUTPUT);
 
   pinMode( BDPIN_DXL_PWR_EN, OUTPUT );
-  Baudrate = 4000000;       // 57,600 BPS
+  Baudrate = 2000000;       // 57,600 BPS
   DXL_PORT.begin(Baudrate);
   dxl_hw_tx_disable();
   dxl_hw_power_enable();
@@ -92,10 +92,6 @@ uint8_t dxl_hw_read(void)
 {
   rx_led_count = 3;
   uint8_t data = DXL_PORT.read();
-  dxl_hw_tx_enable();
-  Serial3.write(data);
-  Serial3.flush();
-  dxl_hw_tx_disable();
   return data;
 }
 
@@ -114,8 +110,6 @@ void dxl_hw_write(uint8_t *p_data, uint32_t length)
   for (i=0; i<length; i++)
   {
     DXL_PORT.write(p_data[i]);
-    Serial2.print("tx : ");
-    Serial2.println(p_data[i]);
   }
   DXL_PORT.flush();
   
