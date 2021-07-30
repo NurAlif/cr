@@ -1,36 +1,37 @@
-#include "AD9833.h"   // LIbrary for AD9833 Module
-#include <Wire.h> // Wire Library for OLED
-#include <Adafruit_GFX.h> // Support Library for OLED
-#include <Adafruit_SSD1306.h> // OLED library
-#include <math.h> // Math Library
-#include <LCD_I2C.h> // library LCD i2C
+#include "AD9833.h"   
+#include <Wire.h> 
+#include <Adafruit_GFX.h> 
+#include <Adafruit_SSD1306.h> 
+#include <math.h> 
+#include <LCD_I2C.h> 
 
-#define SET_FREQUENCY_HZ D13 // Pushbutton To Set Frequency in Hz
-#define SET_FREQUENCY_KHZ D12 // Pushbutton To Set Frequency in Khz
-#define SET_FREQUENCY_MHZ D11 // Pushbutton To Set Frequency in Mhz
-#define ENABLE_DISABLE_OUTPUT_PIN D3 // Pushbutton To Enable/Disable the Output
-#define FNC_PIN D2 // Fsync Required by the AD9833 Module
-#define CLK_PIN D6 // Clock Pin of the Encoder
-#define DATA_PIN D7 // Data Pin of the Encoder
-#define BTN_PIN D8 // Internal Push Button on the Encoder
+#define SET_FREQUENCY_HZ D13 
+#define SET_FREQUENCY_KHZ D12 
+#define SET_FREQUENCY_MHZ D11 
+#define ENABLE_DISABLE_OUTPUT_PIN D3 
+#define FNC_PIN D2
+#define CLK_PIN D6 
+#define DATA_PIN D7
+#define BTN_PIN D8
 
-int counter = 1; // This Counter value will increas or decreas if when the rotarty encoder is turned
-int clockPin; // Placeholder por pin status used by the rotary encoder
-int clockPinState; // Placeholder por pin status used by the rotary encoder
-unsigned long waktu = 0; // Used for debouncing
-unsigned long moduleFrequency; // used to set output frequency
+int counter = 1;
+int clockPin;  
+int clockPinState;
+unsigned long waktu = 0;
+unsigned long moduleFrequency;
 
-long debounce = 220; // Debounce delay
-bool btn_state; // used to enable disable output of the AD98333 Module
-bool set_frequency_hz = 1; // Defult frequency of the AD9833 Module
+long debounce = 220; 
+bool btn_state;
+bool set_frequency_hz = 1;
 bool set_frequency_khz;
 bool set_frequency_mhz;
-String waveSelect = "SIN"; // Startup waveform of the module
-int encoder_btn_count = 0; // used to check encoder button press
-//Adafruit_SSD1306 display(SCREEN_WIDATA_PINH, SCREEN_HEIGHT, &Wire, -1);
+int set_frequency = 0;
+String waveSelect = "SIN"; 
+int encoder_btn_count = 0; 
+
 AD9833 gen(FNC_PIN);
 
-LCD_I2C lcd(0x27); // set Alamat hex (tentukan dengan cara scaning), untuk 16 kareakter dan 2 baris display
+LCD_I2C lcd(0x27); 
 
 void setup()
 {
@@ -43,10 +44,10 @@ void setup()
   pinMode(BTN_PIN, INPUT_PULLUP);
   Serial.begin(9600); 
   clockPinState = digitalRead(CLK_PIN);
-  pinMode(SET_FREQUENCY_HZ, INPUT);
-  pinMode(SET_FREQUENCY_KHZ, INPUT);
-  pinMode(SET_FREQUENCY_MHZ, INPUT);
-  pinMode(ENABLE_DISABLE_OUTPUT_PIN, INPUT);
+  pinMode(SET_FREQUENCY_HZ, INPUT_PULLUP);
+  pinMode(SET_FREQUENCY_KHZ, INPUT_PULLUP);
+  pinMode(SET_FREQUENCY_MHZ, INPUT_PULLUP);
+  pinMode(ENABLE_DISABLE_OUTPUT_PIN, INPUT_PULLUP);
 /*  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) 
   { // Address 0x3D for 128x64
     Serial.println(F("SSD1306 allocation failed"));
@@ -90,69 +91,58 @@ void loop()
     
     Serial.print("Position: ");
     Serial.println(counterx);
-    lcd.clear();
-    lcd.setCursor(0,1);
-    lcd.print("S=");
-    lcd.print(counterx);
-    lcd.print("        ");
   }
-  clockPinState = clockPin; // Remember last CLK_PIN state
+  clockPinState = clockPin; 
   
    //If we detect LOW signal, button is pressed
    if ( digitalRead(BTN_PIN) == LOW && millis() - waktu > debounce) {
+    Serial.println("encoder pressed");
     encoder_btn_count++; // Increment the values
     if (encoder_btn_count > 2) // if value is grater that 2 reset it to 0
     {
       encoder_btn_count = 0;
     }
-    if (encoder_btn_count == 0) { // if the value is 0 sine wave is selected
-      waveSelect = "SIN"; // update the string variable with sin value
-      update_display(); // update the display
+    if (encoder_btn_count == 0) {
+      waveSelect = "SIN";
+      update_display(); display
     }
-    if (encoder_btn_count == 1) { // if the value is 1 square wave is selected
-      waveSelect = "SQR"; // update the string variable with SQR value
-      update_display(); // update the display
+    if (encoder_btn_count == 1) {
+      waveSelect = "SQR";
+      update_display(); display
     }
-    if (encoder_btn_count == 2) { // if the value is 1 Triangular wave is selected
-      waveSelect = "TRI";  // update the string variable with TRI value
-      update_display();// update the display
-    }
-    waktu = millis(); // update the waktu variable
+    if (encoder_btn_count == 2) {
+      waveSelect = "TRI"; 
+      update_display();}
+    waktu = millis(); 
   }
-  // Check buttton press action with analogread method
-  // Put in a slight delay to help debounce the reading
-  if (!digitalRead(SET_FREQUENCY_HZ) && millis() - waktu > debounce) { // check analogpin with debounce delay
-    //update boolean  values
-    set_frequency_hz = 1;
-    set_frequency_khz = 0;
-    set_frequency_mhz = 0;
-    update_display();// update the display
-    waktu = millis();// update the waktu variable
+  
+  if (digitalRead(SET_FREQUENCY_HZ) == LOW && millis() - waktu > debounce) {
+    Serial.println("SET_FREQUENCY_HZ - pressed"); 
+    set_frequency = 0;
+    update_display();
+    waktu = millis();
   }
-  if (!digitalRead(SET_FREQUENCY_KHZ) && millis() - waktu > debounce) { // check analogpin with debounce delay
-    //update boolean  values
-    set_frequency_hz = 0;
-    set_frequency_khz = 1;
-    set_frequency_mhz = 0;
+  if (digitalRead(SET_FREQUENCY_KHZ) == LOW && millis() - waktu > debounce) {
+    Serial.println("SET_FREQUENCY_KHZ - pressed"); 
+    set_frequency = 1;
     moduleFrequency = counter * 1000;
-    update_display();// update the display
-    waktu = millis();// update the waktu variable
+    update_display();
+    waktu = millis();
   }
-  if (!digitalRead(SET_FREQUENCY_MHZ) && millis() - waktu > debounce ) { // check analogpin with debounce delay
-    //update boolean  values
-    set_frequency_hz = 0;
-    set_frequency_khz = 0;
-    set_frequency_mhz = 1;
+  if (digitalRead(SET_FREQUENCY_MHZ) == LOW && millis() - waktu > debounce ) {
+    Serial.println("SET_FREQUENCY_MHZ - pressed"); 
+    set_frequency = 2;
     moduleFrequency = counter * 1000000;
-    update_display();// update the display
-    waktu = millis();// update the waktu variable
+    update_display();
+    waktu = millis();
   }
-  if (!digitalRead(ENABLE_DISABLE_OUTPUT_PIN) && millis() - waktu > debounce ) {// check analogpin with debounce delay
-    btn_state = ! btn_state; // Invert the button state
-    gen.EnableOutput(btn_state); // Enable / Disable output of the function generator depending on button state
-    update_display();// update the display
+  if (digitalRead(ENABLE_DISABLE_OUTPUT_PIN) == LOW && millis() - waktu > debounce ) {
+    Serial.println("ENABLE_DISABLE_OUTPUT_PIN - pressed");
+    btn_state = ! btn_state; 
+    gen.EnableOutput(btn_state); 
+    update_display();
 
-    waktu = millis();// update the waktu variable
+    waktu = millis();
   }
 }
 
@@ -165,68 +155,63 @@ void update_display()
   //lcd.setTextSize(2);//set text Size
 //  lcd.setCursor(0,0);//Set cursor position
 //  lcd.println("Output ON");
-  if (set_frequency_hz == 1 && set_frequency_khz == 0 && set_frequency_mhz == 0 ) { // check if button for setting the frequency in Hz is pressed
-    moduleFrequency = counter; //updayte teh moduleFrequency variable with current counter value
+  if (set_frequency == 0) { 
+    moduleFrequency = counter;
   }
-  if (set_frequency_hz == 0 && set_frequency_khz == 1 && set_frequency_mhz == 0 ) { // check if button for setting the frequency in KHz is pressed
-    moduleFrequency = counter * 1000;//updayte teh moduleFrequency variable with current counter value but we multiply 1000 to set it on KHZ
+  if (set_frequency == 1) { 
+    moduleFrequency = counter * 1000;
   }
-  if (set_frequency_hz == 0 && set_frequency_khz == 0 && set_frequency_mhz == 1) { // check if button for setting the frequency in MHz is pressed
+  if (set_frequency == 2) { 
     moduleFrequency = counter * 1000000;
     if (moduleFrequency > 12000000)
     {
-      moduleFrequency = 12000000; // do not let the frequency to be grater that 12Mhz
+      moduleFrequency = 12000000; 
       counter = 12;
     }
   }
-  if (waveSelect == "SIN") { // Sine wave is selected
+  if (waveSelect == "SIN") { 
     lcd.setCursor(0,0);
     lcd.println("SIN");
     gen.ApplySignal(SINE_WAVE, REG0, moduleFrequency);
     Serial.println(moduleFrequency);
   }
-  if (waveSelect == "SQR") {// Sqr wave is selected
+  if (waveSelect == "SQR") {
     lcd.setCursor(0,0);
     lcd.println("SQR");
     gen.ApplySignal(SQUARE_WAVE, REG0, moduleFrequency);
     Serial.println(moduleFrequency);
   }
-  if (waveSelect == "TRI" ) {// Tri wave is selected
+  if (waveSelect == "TRI" ) {
     lcd.setCursor(0,0);
     lcd.println("TRI");
-    gen.ApplySignal(TRIANGLE_WAVE, REG0, moduleFrequency); // update the AD9833 module.
+    gen.ApplySignal(TRIANGLE_WAVE, REG0, moduleFrequency); 
     Serial.println(moduleFrequency);
   }
   lcd.setCursor(5,1);
-  //lcd.print(0, 1);
-  lcd.println(counter); // print the counter information on teh display.
+  lcd.println(counter); .
   if (set_frequency_hz == 1 && set_frequency_khz == 0 && set_frequency_mhz == 0 ) {
     lcd.setCursor(13, 1);
-    lcd.println(" Hz"); // print Hz on the display
-    lcd.display(); // when all set update the display
+    lcd.println(" Hz"); 
+    lcd.display(); 
   }
   if (set_frequency_hz == 0 && set_frequency_khz == 1 && set_frequency_mhz == 0 ) {
     lcd.setCursor(13, 1);
     lcd.println("Khz");
-    lcd.display(); // when all set update the display
+    lcd.display();
   }
   if (set_frequency_hz == 0 && set_frequency_khz == 0 && set_frequency_mhz == 1) {
     lcd.setCursor(13, 1);
     lcd.println("Mhz");
-    lcd.display(); // when all set update the display
+    lcd.display();
   }
   if (btn_state) { 
-//    lcd.setTextSize(1);
     lcd.setCursor(13, 0);
-    lcd.print(" ON"); // print output on to the display
+    lcd.print(" ON");
     lcd.display();
-//    lcd.setTextSize(2);
   }
   else {
-//    lcd.setTextSize(1);
     lcd.setCursor(13, 0);
-    lcd.print("OFF"); // print output off to the display
-    lcd.display();
-//    lcd.setTextSize(2);
+    lcd.print("OFF");
+    lcd.display();    
   }
 }
